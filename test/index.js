@@ -10,6 +10,7 @@ function main()
     console.log("✅");
 }
 
+// https://github.com/nodejs/node/blob/master/test/addons/hello-world/binding.gyp
 function test_hello_cc()
 {
     // compile

@@ -139,9 +139,10 @@ function exec_sync()
     // console.log({binding_path,exec_args})
     let code = 0;
     try {
-        chproc.execSync.apply(null, this.get_exec_args());
+        chproc.execFileSync.apply(null, exec_args);
     } catch(e) {
         code = 1
+        console.log("gypcc: ERROR: exec_sync")
         console.error(e)
     }
     fs.rmSync(binding_path,{force:true});
@@ -156,8 +157,10 @@ function exec_sync()
 function add_env(obj)
 {
     const tgt = this;
-    tgt.add_argv_string(obj.CFLAGS);
-    tgt.add_argv_string(obj.LDFLAGS);
+    const {CFLAGS, LDFLAGS} = obj;
+    // log({CFLAGS, LDFLAGS})
+    tgt.add_argv_string(CFLAGS);
+    tgt.add_argv_string(LDFLAGS);
     if (_use("npm_config_runtime") === "electron") {
         tgt.npm_config_dist_url = tgt.npm_config_dist_url || "https://electronjs.org/headers";
         tgt.npm_config_build_from_source = tgt.npm_config_build_from_source || "true";
@@ -269,7 +272,8 @@ function get_binding()
 
 function get_exec_args()
 {
-    let cmd = "node-gyp rebuild";
+    const file = p.resolve(__dirname,'node_modules','.bin','node-gyp')
+    const args = [file, "rebuild"];
     const env = {}
     const {
         debug,
@@ -285,37 +289,36 @@ function get_exec_args()
         npm_config_dist_url,
     } = this;
     // cmd += ` --directory=`+P`${CWD}`
-    if (debug) cmd += ` --debug`
-    if (verbose) cmd += ` --${verbose}`
+    if (debug) args.push(`--debug`)
+    if (verbose) args.push(`--${verbose}`)
     if (PATH)
         env.PATH = P`${PATH}`;
     if (HOME)
         env.HOME = P`${HOME}`;
     if (MAKE)
-        cmd += ` --make=${ENV.MAKE}`
+        args.push(`--make=${ENV.MAKE}`)
     if (npm_config_runtime)
-        cmd += ` --runtime=${
+        args.push(`--runtime=${
             env.npm_config_runtime = npm_config_runtime
-        }`
+        }`)
     if (npm_config_target)
-        cmd += ` --target=${
+        args.push(`--target=${
             env.npm_config_runtime = npm_config_target
-        }`
+        }`)
     if (npm_config_arch)
-        cmd += ` --arch=${
+        args.push(`--arch=${
             env.npm_config_arch = npm_config_arch
-        }`
+        }`)
     if (npm_config_target_arch)
-        cmd += ` --target-arch=${
+        args.push(`--target-arch=${
             env.npm_config_target_arch = npm_config_target_arch
-        }`
+        }`)
     if (npm_config_dist_url)
-        cmd += ` --dist-url=${npm_config_dist_url}`
+        args.push(`--dist-url=${npm_config_dist_url}`)
         // NOTE: https://github.com/nodejs/node-gyp/issues/2250
     if (npm_config_build_from_source)
         env.npm_config_build_from_source = npm_config_build_from_source;
-
-    return [cmd, {
+    return [process.execPath, args, {
         // cwd:
         env,
     }]
@@ -372,7 +375,7 @@ function _l(lib)
 function _L(dir)
 {
     dir = P`${dir}`;
-    this.libraries.push('L'+dir);
+    this.libraries.push('-L'+dir);
 }
 
 function _f(framework)
