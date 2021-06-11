@@ -98,7 +98,6 @@ function Target()
     this.npm_config_target_arch = ""
     this.npm_config_build_from_source = ""
     this.npm_config_dist_url = "" // NOTE: https://github.com/nodejs/node-gyp/issues/2250
-
 }
 
 function exec_sync()
@@ -233,9 +232,8 @@ function get_binding()
         include_dirs,
         cflags,
         xcode_settings,
-        'cflags!': ['-stdlib=libc++'],
+        // 'cflags!': ['-stdlib=libc++'],
     }
-    // log({CWD,binding})
     return binding;
 }
 
