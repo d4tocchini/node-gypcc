@@ -1,0 +1,455 @@
+
+
+/*
+
+OTHER_CFLAGS: the long overdue OSX/node-gyp epiphany #144
+    https://github.com/nickdesaulniers/node-nanomsg/pull/144
+    OK here's the trick to pass real cflags= to node-gyp compiler toolchain from OSX
+        by listing OTHER_CFLAGS under xcode_settings.
+            cflags= doesn't work outside xcode_settings
+            Only the super magically reserved word: OTHER_CFLAGS works, so cflags and CFLAGS won't cut it
+
+
+
+
+
+https://docs.microsoft.com/en-us/cpp/build/reference/i-additional-include-directories?view=msvc-160
+
+TODO:
+electron win32
+    https://www.electronjs.org/docs/tutorial/using-native-node-modules#a-note-about-win_delay_load_hook
+
+*/
+
+// NOTABUG: old school anti-soydev export
+global.gypcc = {
+    main,
+    Target,
+    argv_from_string,
+}
+const T = Target.prototype;
+T.exec_sync = exec_sync;
+T.add_env = add_env;
+T.add_argv_string = add_argv_string;
+T.add_argv = add_argv;
+T.get_exec_args = get_exec_args
+T.get_binding = get_binding;
+T._debug = _debug;
+T._silent = _silent;
+T._verbose = _verbose;
+T._silly = _silly;
+T._static = _static
+T._shared = _shared
+T._source = _source;
+T._o = _o
+T._I = _I
+T._D = _D
+T._cflag = _cflag
+T._ldflag = _ldflag
+T._l = _l
+T._L = _L
+T._f = _f
+T._F = _F
+
+const fs = require('fs');
+const p = require('path');
+const chproc = require("child_process");
+const log = console.log;
+// const lob = console.dir;
+const CWD = process.cwd();
+const ENV = process.env;
+// const PREFIX = ENV.PREFIX
+// const arch = process.arch;
+// TODO: const platform = process.platform; // 'darwin''win32''freebsd''linux''openbsd''sunos''aix'
+// process.versions
+// TODO: let GYP_DIR = "./.gyp"
+
+function main(argc, argv)
+{
+    let r = 0;
+    if (argc == 1)
+        return help()
+    argv.shift();
+    const cmd = argv[0];
+    switch (cmd) {
+        case "version": case "--version": case "-v":
+            return version();
+        case "help": case "--help": case "-h":
+            return help();
+    }
+    const tgt = new Target();
+    tgt.add_env(ENV);
+    tgt.add_argv(argv);
+    r = tgt.exec_sync();
+    return r;
+    // TODO: ...
+    function version()
+    {
+        log("node-gypcc@")
+        return 0
+    }
+    function help(argv)
+    {
+        log("node-gypcc@")
+        return 0
+    }
+}
+
+function Target()
+{
+    this.verbose = "" // silent verbose silly
+    this.debug = 0
+    this.out = ""
+    this.target_name = ""
+    this.type = "exectuable" // shared_library static_library
+    this.sources = []
+    this.defines = []
+    this.include_dirs = []
+    this.libraries = []
+    this.cflags = []
+    this.ldflags = []
+    this.HOME = ""
+    this.PATH = ENV.PATH
+    // PYTHON: "/usr/local/bin/python3.9",
+    // NODE_GYP_FORCE_PYTHON: "/usr/local/bin/python3.9",
+    this.MAKE = ""
+    // win
+    // this.msvs_guid = ""
+    // mac
+    this.MACOSX_DEPLOYMENT_TARGET = ""
+    // npm
+    this.npm_config_runtime = ""
+    this.npm_config_target = ""
+    this.npm_config_arch = ""
+    this.npm_config_target_arch = ""
+    this.npm_config_build_from_source = ""
+    this.npm_config_dist_url = "" // NOTE: https://github.com/nodejs/node-gyp/issues/2250
+
+}
+
+function exec_sync()
+{
+    const binding = this.get_binding();
+    // mkdirp('./.gyp')
+    // mkjson(`./.gyp/binding.gyp`, {
+    // const dir = P`${CWD}`
+    const exec_args = this.get_exec_args()
+    const binding_path = P`./binding.gyp`
+    mkjson(binding_path, {targets: [ binding ]})
+    // console.log({binding_path,exec_args})
+    let code = 0;
+    try {
+        chproc.execSync.apply(null, this.get_exec_args());
+    } catch(e) {
+        code = 1
+        console.error(e)
+    }
+    fs.rmSync(binding_path,{force:true});
+    if (code == 0)
+        fs.renameSync(
+            `./build/${this.debug?"Debug":"Release"}/${this.target_name}.node`,
+            this.out
+        );
+    return code;
+}
+
+function add_env(obj)
+{
+    const tgt = this;
+    tgt.add_argv_string(obj.CFLAGS);
+    tgt.add_argv_string(obj.LDFLAGS);
+    if (_use("npm_config_runtime") === "electron") {
+        tgt.npm_config_dist_url = tgt.npm_config_dist_url || "https://electronjs.org/headers";
+        tgt.npm_config_build_from_source = tgt.npm_config_build_from_source || "true";
+        tgt.HOME = tgt.HOME || "~/.electron-gyp";
+    }
+    _use("npm_config_target");
+    _use("npm_config_arch");
+    _use("npm_config_target_arch");
+    _use("npm_config_build_from_source");
+    _use("npm_config_dist_url"); // NOTE: https://github.com/nodejs/node-gyp/issues/2250
+    _use("MAKE");
+    _use("HOME");
+    _use("PATH");
+    _use("MACOSX_DEPLOYMENT_TARGET");
+    function _use(key) {
+        if (obj[key])
+            return tgt[key] = obj[key];
+        return ''
+    }
+}
+
+function add_argv_string(string)
+{
+    if (string)
+        this.add_argv(argv_from_string(string))
+}
+
+// https://gcc.gnu.org/onlinedocs/gcc/Overall-Options.html#Overall-Options
+function add_argv(argv)
+{
+    const tgt = this;
+    const argc = argv.length
+    let argi = 0
+    function next() {return argv[argi++];}
+    while (argi < argc) {
+        let arg = next()
+
+        switch (arg) {
+            case "-o": tgt._o(next()); continue;
+            // case "-e": cc_e(next()); continue; // TODO: -e entry --entry=entry
+            // TODO: case "-c": tgt._c(next()); continue; // Compile or assemble the source files, but do not link.
+            case "-framework": tgt._f(next()); continue;
+                // https://github.com/nodejs/node-gyp/issues/682
+                // TODO: ? -Wl, --> link_settings ?
+            // case "x": tgt._x(next()); break; // language
+            case "-static"  : tgt._static(); continue;
+            case "-shared"  : tgt._shared(); continue;
+            case "--debug"  : tgt._debug(); continue;
+            case "--silent" : tgt._silent(); continue;
+            case "--verbose": tgt._verbose(); continue;
+            case "--silly"  : tgt._silly(); continue;
+            // TODO: -pthread
+        }
+
+        let short = arg.match(/^-([a-zA-Z])(.*)/)
+        if (short) {
+            let [,ch,val] = short;
+            switch (ch) {
+                case "I": tgt._I(val);    continue;
+                case "L": tgt._L(val);    continue;
+                case "l": tgt._l(val);    continue;
+                case "D": tgt._D(val);    continue;
+                case "F": tgt._F(val);    continue;
+            }
+            tgt._cflag(arg);
+            continue;
+        }
+        let long = arg.match(/^--([a-zA-Z][a-zA-Z0-9]*)(=?)(.*)/)
+        if (long) {
+            let [,key,,val] = long;
+            switch (key) {
+                // case "target-name":
+                case "make"             : tgt.MAKE = val; continue;
+                case "runtime"          : tgt.npm_config_runtime = val; continue;
+                case "target"           : tgt.npm_config_target = val; continue;
+                case "arch"             : tgt.npm_config_arch = val; continue;
+                case "target-arch"      : tgt.npm_config_target_arch = val; continue;
+                case "build-from-source": tgt.npm_config_build_from_source = val; continue;
+                case "dist-url"         : tgt.npm_config_dist_url = val; continue;
+            }
+            tgt._cflag(arg);
+        }
+        tgt._source(arg);
+    }
+}
+
+function get_binding()
+{
+    const {target_name, sources, libraries, include_dirs, cflags, MACOSX_DEPLOYMENT_TARGET} = this;
+    const xcode_settings = {
+        OTHER_CFLAGS: cflags, // NOTE: https://github.com/nickdesaulniers/node-nanomsg/pull/144
+    }
+    if (MACOSX_DEPLOYMENT_TARGET) {
+        // TODO: "-mmacosx-version-min=10.14"
+        xcode_settings.MACOSX_DEPLOYMENT_TARGET = MACOSX_DEPLOYMENT_TARGET
+    }
+    const binding = {
+        target_name,
+        sources,
+        libraries,
+        include_dirs,
+        cflags,
+        xcode_settings,
+        'cflags!': ['-stdlib=libc++'],
+    }
+    // log({CWD,binding})
+    return binding;
+}
+
+function get_exec_args()
+{
+    let cmd = "node-gyp rebuild";
+    const env = {}
+    const {
+        debug,
+        verbose,
+        PATH,
+        HOME,
+        MAKE,
+        npm_config_runtime,
+        npm_config_target,
+        npm_config_arch,
+        npm_config_target_arch,
+        npm_config_build_from_source,
+        npm_config_dist_url,
+    } = this;
+    // cmd += ` --directory=`+P`${CWD}`
+    if (debug) cmd += ` --debug`
+    if (verbose) cmd += ` --${verbose}`
+    if (PATH)
+        env.PATH = P`${PATH}`;
+    if (HOME)
+        env.HOME = P`${HOME}`;
+    if (MAKE)
+        cmd += ` --make=${ENV.MAKE}`
+    if (npm_config_runtime)
+        cmd += ` --runtime=${
+            env.npm_config_runtime = npm_config_runtime
+        }`
+    if (npm_config_target)
+        cmd += ` --target=${
+            env.npm_config_runtime = npm_config_target
+        }`
+    if (npm_config_arch)
+        cmd += ` --arch=${
+            env.npm_config_arch = npm_config_arch
+        }`
+    if (npm_config_target_arch)
+        cmd += ` --target-arch=${
+            env.npm_config_target_arch = npm_config_target_arch
+        }`
+    if (npm_config_dist_url)
+        cmd += ` --dist-url=${npm_config_dist_url}`
+        // NOTE: https://github.com/nodejs/node-gyp/issues/2250
+    if (npm_config_build_from_source)
+        env.npm_config_build_from_source = npm_config_build_from_source;
+
+    return [cmd, {
+        // cwd:
+        env,
+    }]
+}
+
+function _debug() {this.debug = 1;}
+function _silent() {this.verbose = "silent";}
+function _verbose() {this.verbose = "verbose";}
+function _silly() {this.verbose = "silly";}
+function _static() {this.type = "static_library";}
+function _shared() {this.type = "shared_library";}
+
+function _o(file)
+{
+    if (!file.endsWith(".node"))
+        file += ".node"
+    this.out = P`${file}`;
+    this.target_name = p.basename(file).replace(/\..*$/,"");
+}
+
+function _source(src)
+{
+    src = P`${src}`;
+    this.sources.push(src);
+}
+
+function _I(dir)
+{
+    // "<(module_root_dir)/dep/lemongraph/lib"
+    dir = P`${dir}`;
+    this.include_dirs.push(dir);
+}
+
+function _D(def)
+{
+    this.defines.push(def);
+}
+
+function _cflag(f)
+{
+    this.cflags.push(f);
+}
+
+function _ldflag(f)
+{
+    this.ldflags.push(f);
+}
+
+function _l(lib)
+{
+    this.libraries.push('-l'+lib);
+}
+
+function _L(dir)
+{
+    dir = P`${dir}`;
+    this.libraries.push('L'+dir);
+}
+
+function _f(framework)
+{
+    this.libraries.push(`-framework ${framework}`);
+}
+
+function _F(framework_dir)
+{
+    framework_dir = P`${framework_dir}`;
+    this.libraries.push(`-F${framework_dir}`);
+}
+
+// utils ----------------------------------------------------------------------
+
+const RX_ARGV = /([^\s'"]([^\s'"]*(['"])([^\3]*?)\3)+[^\s'"]*)|[^\s'"]+|(['"])([^\5]*?)\5/gi; // https://github.com/mccormicka/string-argv/blob/master/index.ts
+
+function argv_from_string(str)
+{
+    const argv = [];
+
+    // TODO: dehack escaped whitespace fix...
+    const string = str.replace(/\\ /g,"~@@~")
+    if (string.length !== str.length)
+        function _arg(a) {return a.replace(/~@@~/g,"\\ ");}
+    else
+        function _arg(a) {return a;}
+    function push(a) {
+        if (typeof a !== "string") return 0
+        if (!a) return -1
+        return argv.push(_arg(a))
+    }
+
+    let match
+    while (true) {
+        match = RX_ARGV.exec(string); // Each call returns next match
+        if (match === null) break
+        if (push(match[1])) continue; // Index 1 is captured group if it exists
+        if (push(match[6])) continue;
+        if (push(match[0])) continue; // Index 0 is matched text if no captured group exists
+    };
+    return argv;
+}
+
+function P(strings, ...keys)
+{
+    let i = 0
+    let r = strings[i++]
+    for (const k of keys)
+        r += `${k}${strings[i++]}`
+    return _path_fix(r)
+}
+
+const _path_fix = (p.sep === '/') ? function (path) {return path;} : function (path)
+{
+    path = path.replace(/^~\//g, ENV.HOME || ENV.USERPROFILE ); // TODO:
+    path = path.replace(/\//g, p.sep);
+
+}
+
+function mkdirp(path)
+{
+    return fs.mkdirSync(P`${path}`, {recursive:true});
+}
+
+function mkfile(path, content) // => num of bytes written
+{
+    return fs.writeFileSync(P`${path}`, content);
+}
+
+function mkjson(path, content)
+{
+    return mkfile(path, JSON.stringify(content))
+}
+
+
+
+
+
+

@@ -1,0 +1,25 @@
+{
+  "name": "node-gypcc",
+  "version": "0.9.0",
+  "author": "d4tocchini",
+  "description": "node-gyp usable as `$CC`",
+  "homepage": "https://github.com/d4tocchini/node-gypcc",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/d4tocchini/node-gypcc.git"
+  },
+  "bugs": {
+    "url": "https://github.com/d4tocchini/node-gypcc/issues"
+  },
+  "license": "MIT",
+  "scripts": {
+    "test": "cd test; node ./"
+  },
+  "main": "index.js",
+  "bin": {
+    "node-gypcc": "bin/node-gypcc.js"
+  },
+  "dependencies": {
+    "node-gyp": "8.x"
+  }
+}
