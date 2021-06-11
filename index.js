@@ -1,28 +1,4 @@
-
-
-/*
-
-OTHER_CFLAGS: the long overdue OSX/node-gyp epiphany #144
-    https://github.com/nickdesaulniers/node-nanomsg/pull/144
-    OK here's the trick to pass real cflags= to node-gyp compiler toolchain from OSX
-        by listing OTHER_CFLAGS under xcode_settings.
-            cflags= doesn't work outside xcode_settings
-            Only the super magically reserved word: OTHER_CFLAGS works, so cflags and CFLAGS won't cut it
-
-
-
-
-
-https://docs.microsoft.com/en-us/cpp/build/reference/i-additional-include-directories?view=msvc-160
-
-TODO:
-electron win32
-    https://www.electronjs.org/docs/tutorial/using-native-node-modules#a-note-about-win_delay_load_hook
-
-*/
-
-// NOTABUG: old school anti-soydev export
-global.gypcc = {
+global.gypcc = { // NOTABUG: old school anti-soydev export
     main,
     Target,
     argv_from_string,
@@ -55,13 +31,11 @@ const fs = require('fs');
 const p = require('path');
 const chproc = require("child_process");
 const log = console.log;
-// const lob = console.dir;
 const CWD = process.cwd();
 const ENV = process.env;
-// const PREFIX = ENV.PREFIX
 // const arch = process.arch;
 // TODO: const platform = process.platform; // 'darwin''win32''freebsd''linux''openbsd''sunos''aix'
-// process.versions
+// TODO: process.versions
 // TODO: let GYP_DIR = "./.gyp"
 
 function main(argc, argv)
@@ -114,7 +88,7 @@ function Target()
     // NODE_GYP_FORCE_PYTHON: "/usr/local/bin/python3.9",
     this.MAKE = ""
     // win
-    // this.msvs_guid = ""
+    // TODO: this.msvs_guid = ""
     // mac
     this.MACOSX_DEPLOYMENT_TARGET = ""
     // npm
@@ -130,19 +104,16 @@ function Target()
 function exec_sync()
 {
     const binding = this.get_binding();
-    // mkdirp('./.gyp')
-    // mkjson(`./.gyp/binding.gyp`, {
-    // const dir = P`${CWD}`
     const exec_args = this.get_exec_args()
     const binding_path = P`./binding.gyp`
     mkjson(binding_path, {targets: [ binding ]})
-    // console.log({binding_path,exec_args})
+    // log({binding_path,exec_args})
     let code = 0;
     try {
         chproc.execFileSync.apply(null, exec_args);
     } catch(e) {
         code = 1
-        console.log("gypcc: ERROR: exec_sync")
+        log("gypcc: ERROR: exec_sync")
         console.error(e)
     }
     fs.rmSync(binding_path,{force:true});
@@ -158,7 +129,6 @@ function add_env(obj)
 {
     const tgt = this;
     const {CFLAGS, LDFLAGS} = obj;
-    // log({CFLAGS, LDFLAGS})
     tgt.add_argv_string(CFLAGS);
     tgt.add_argv_string(LDFLAGS);
     if (_use("npm_config_runtime") === "electron") {
@@ -214,7 +184,6 @@ function add_argv(argv)
             case "--silly"  : tgt._silly(); continue;
             // TODO: -pthread
         }
-
         let short = arg.match(/^-([a-zA-Z])(.*)/)
         if (short) {
             let [,ch,val] = short;
@@ -288,7 +257,7 @@ function get_exec_args()
         npm_config_build_from_source,
         npm_config_dist_url,
     } = this;
-    // cmd += ` --directory=`+P`${CWD}`
+    // TODO: cmd += ` --directory=`+P`${CWD}`
     if (debug) args.push(`--debug`)
     if (verbose) args.push(`--${verbose}`)
     if (PATH)
@@ -396,7 +365,6 @@ const RX_ARGV = /([^\s'"]([^\s'"]*(['"])([^\3]*?)\3)+[^\s'"]*)|[^\s'"]+|(['"])([
 function argv_from_string(str)
 {
     const argv = [];
-
     // TODO: dehack escaped whitespace fix...
     const string = str.replace(/\\ /g,"~@@~")
     if (string.length !== str.length)
@@ -408,7 +376,6 @@ function argv_from_string(str)
         if (!a) return -1
         return argv.push(_arg(a))
     }
-
     let match
     while (true) {
         match = RX_ARGV.exec(string); // Each call returns next match
@@ -450,9 +417,3 @@ function mkjson(path, content)
 {
     return mkfile(path, JSON.stringify(content))
 }
-
-
-
-
-
-
