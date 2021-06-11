@@ -33,10 +33,6 @@ const chproc = require("child_process");
 const log = console.log;
 const CWD = process.cwd();
 const ENV = process.env;
-// const arch = process.arch;
-// TODO: const platform = process.platform; // 'darwin''win32''freebsd''linux''openbsd''sunos''aix'
-// TODO: process.versions
-// TODO: let GYP_DIR = "./.gyp"
 
 function main(argc, argv)
 {
@@ -87,9 +83,7 @@ function Target()
     // PYTHON: "/usr/local/bin/python3.9",
     // NODE_GYP_FORCE_PYTHON: "/usr/local/bin/python3.9",
     this.MAKE = ""
-    // win
     // TODO: this.msvs_guid = ""
-    // mac
     this.MACOSX_DEPLOYMENT_TARGET = ""
     // npm
     this.npm_config_runtime = ""
@@ -106,7 +100,6 @@ function exec_sync()
     const exec_args = this.get_exec_args()
     const binding_path = P`./binding.gyp`
     mkjson(binding_path, {targets: [ binding ]})
-    // log({binding_path,exec_args})
     let code = 0;
     try {
         chproc.execFileSync.apply(null, exec_args);
@@ -166,7 +159,6 @@ function add_argv(argv)
     function next() {return argv[argi++];}
     while (argi < argc) {
         let arg = next()
-
         switch (arg) {
             case "-o": tgt._o(next()); continue;
             // case "-e": cc_e(next()); continue; // TODO: -e entry --entry=entry
@@ -200,7 +192,6 @@ function add_argv(argv)
         if (long) {
             let [,key,,val] = long;
             switch (key) {
-                // case "target-name":
                 case "make"             : tgt.MAKE = val; continue;
                 case "runtime"          : tgt.npm_config_runtime = val; continue;
                 case "target"           : tgt.npm_config_target = val; continue;
@@ -314,7 +305,6 @@ function _source(src)
 
 function _I(dir)
 {
-    // "<(module_root_dir)/dep/lemongraph/lib"
     dir = P`${dir}`;
     this.include_dirs.push(dir);
 }
