@@ -45,10 +45,10 @@ LDFLAGS="-L${PREFIX}/lib -ltcc -lpthread"
 CFLAGS=$CFLAGS $CC $LDFLAGS ./binding.c -o ./build/binding.node
 ```
 
-proof software degrades faster than hardware improves:
+reminder software degrades faster than hardware improves:
 
 ```
-CC=node-gypcc make
+CC=node-gypcc make binding.node
 ```
 
 More coming soon...
