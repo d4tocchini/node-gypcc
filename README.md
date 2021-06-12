@@ -5,7 +5,7 @@
 * single src file (<400 LOC)
 * single dep (node-gyp)
 
-## usage
+## cli
 
 basics:
 
@@ -54,4 +54,6 @@ reminder software degrades faster than hardware improves:
 CC=node-gypcc make binding.node
 ```
 
-More coming soon...
+## lib
+
+***WIP***
