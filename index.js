@@ -184,7 +184,7 @@ function add_argv(argv)
                 case "D": tgt._D(val);  continue;
                 case "F": tgt._F(val);  continue;
             }
-            tgt._cflag(arg);        continue;
+            tgt._cflag(arg);    continue;
         }
         let long = arg.match(/^--([a-zA-Z][a-zA-Z0-9]*)(=?)(.*)/);
         if (long) {
@@ -198,7 +198,7 @@ function add_argv(argv)
                 case "build-from-source": tgt.npm_config_build_from_source = val; continue;
                 case "dist-url"         : tgt.npm_config_dist_url = val;          continue;
             }
-            tgt._cflag(arg);
+            tgt._cflag(arg);    continue;
         }
         tgt._source(arg);
     }
