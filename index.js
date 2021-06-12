@@ -161,7 +161,7 @@ function add_argv(argv)
     const tgt = this;
     const argc = argv.length;
     let argi = 0;
-    function next() {return argv[argi++];}
+    function next() { return argv[argi++]; }
     while (argi < argc) {
         let arg = next();
         switch (arg) {
@@ -304,9 +304,9 @@ function argv_from_string(str)
         return argv.push(_arg(a));
     }
     if (string.length !== str.length)
-        function _arg(a) {return a.replace(/~@@~/g,"\\ ");}
+        function _arg(a) { return a.replace(/~@@~/g,"\\ "); }
     else
-        function _arg(a) {return a;}
+        function _arg(a) { return a; }
     let match;
     while (true) {
         match = RX_ARGV.exec(string); // Each call returns next match
@@ -327,7 +327,7 @@ function P(strings, ...keys)
     return _path_fix(r);
 }
 
-const _path_fix = (p.sep === '/') ? function (path) {return path;} : function (path)
+const _path_fix = (p.sep === '/') ? function (path) { return path; } : function (path)
 {
     path = path.replace(/^~\//g, ENV.HOME || ENV.USERPROFILE ); // TODO: verify
     path = path.replace(/\//g, p.sep);
