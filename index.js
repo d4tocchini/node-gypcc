@@ -21,7 +21,7 @@ T._o = _o;
 T._I = _I;
 T._D = _D;
 T._cflag = _cflag;
-T._ldflag = _ldflag;
+// T._ldflag = _ldflag;
 T._l = _l;
 T._L = _L;
 T._f = _f;
@@ -78,7 +78,7 @@ function Target()
     this.include_dirs = [];
     this.libraries = [];
     this.cflags = [];
-    this.ldflags = [];
+    // this.ldflags = [];
     this.HOME = "";
     this.PATH = ENV.PATH;
     // PYTHON: "/usr/local/bin/python3.9",
@@ -100,7 +100,8 @@ function exec_sync()
     const binding = this.get_binding();
     const exec_args = this.get_exec_args()
     const binding_path = P`./binding.gyp`;
-    // console.dir(binding)
+    if (this.verbose !== "silent")
+        console.dir(binding)
     mkjson(binding_path, {targets: [ binding ]});
     let code = 0;
     try {
@@ -206,7 +207,10 @@ function add_argv(argv)
 
 function get_binding()
 {
-    const {target_name, sources, libraries, include_dirs, cflags, MACOSX_DEPLOYMENT_TARGET} = this;
+    const {
+        target_name, sources, libraries, include_dirs, defines, cflags,
+        MACOSX_DEPLOYMENT_TARGET
+    } = this;
     const xcode_settings = {
         OTHER_CFLAGS: cflags, // NOTE: https://github.com/nickdesaulniers/node-nanomsg/pull/144
     };
@@ -214,6 +218,7 @@ function get_binding()
         xcode_settings.MACOSX_DEPLOYMENT_TARGET = MACOSX_DEPLOYMENT_TARGET;
     const binding = {
         target_name,
+        defines,
         sources,
         libraries,
         include_dirs,
@@ -273,7 +278,7 @@ function _source(src) { this.sources.push(P`${src}`); }
 function _I(dir)      { this.include_dirs.push(P`${dir}`); }
 function _D(def)      { this.defines.push(def); }
 function _cflag(f)    { this.cflags.push(f); }
-function _ldflag(f)   { this.ldflags.push(f); }
+// function _ldflag(f)   { this.ldflags.push(f); }
 function _l(lib)      { this.libraries.push('-l'+lib); }
 function _L(dir)      { this.libraries.push('-L'+P`${dir}`); }
 function _f(lib)      { this.libraries.push(`-framework ${lib}`); }

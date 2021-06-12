@@ -1,6 +1,6 @@
 {
   "name": "node-gypcc",
-  "version": "0.9.3",
+  "version": "0.9.4",
   "author": "d4tocchini",
   "description": "node-gyp wrapper for compiling native node addons without the binding.gyp conventions - just works with make, cmake, ninja, etc.  Use it like gcc, emcc, clang, CC=node-gypcc",
   "homepage": "https://github.com/d4tocchini/node-gypcc",
